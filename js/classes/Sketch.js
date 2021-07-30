@@ -6,6 +6,7 @@ export default class Sketch {
     delta = 0
 
     objects = []
+    hooks = []
 
     constructor({container=document.body, controls}={}) {
         this.container = typeof container == "string" ? document.querySelector(container) : container
@@ -20,6 +21,7 @@ export default class Sketch {
         }
 
         window.addEventListener("resize", this.resize.bind(this))
+        this.resize()
     }
 
     get aspect() {
@@ -31,6 +33,10 @@ export default class Sketch {
             this.objects.push(object)
             this.scene.add(object.object || object)
         }
+    }
+
+    use(updateHook) {
+        this.hooks.push(updateHook)
     }
     
     resize() {
@@ -47,12 +53,12 @@ export default class Sketch {
     }
 
     createCamera() {
-        const fov = 75
-        const near = 1
-        const far = 1000
+        const width = 10
+        const height = width / this.aspect
 
-        this.camera = new THREE.PerspectiveCamera(fov, this.aspect, near, far)
-        this.camera.position.z = 3
+        this.camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, 1, 100)
+        this.camera.position.set(4, 4, 4)
+        this.camera.lookAt(new THREE.Vector3(0, 0, 0))
     }
     
     createRenderer() {
@@ -81,6 +87,10 @@ export default class Sketch {
             if(typeof object.update == "function") {
                 object.update(this)
             }
+        }
+
+        for(const hook of this.hooks) {
+            hook(this)
         }
 
         window.requestAnimationFrame(this.render.bind(this))
