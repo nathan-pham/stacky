@@ -1,31 +1,53 @@
 import * as THREE from "https://esm.sh/three"
 import Sketch from "./classes/Sketch.js"
-import Block from "./classes/objects/Block.js"
 import AmbientLight from "./classes/objects/lights/AmbientLight.js"
 import DirectionalLight from "./classes/objects/lights/DirectionalLight.js"
+import createLayer from "./hooks/createLayer.js"
+import useCamera from "./hooks/useCamera.js"
 
 const sketch = new Sketch({container: "#webgl__container"})
-
 sketch.scene.background = new THREE.Color(0x00000)
 
-const layer = (x, z, width, depth, direction) => {
+sketch.use(useCamera)
+
+sketch.add(new AmbientLight(), new DirectionalLight(), createLayer(sketch.objects, 0, 0, 3, 3, "none"))
+
+
+document.body.addEventListener("click", () => {
     const blocks = sketch.objects.filter(object => object?.type == "block")
-    const height = 1
-    const y = height * blocks.length
 
-    const color = new THREE.Color(`hsl(${30 + blocks.length * 4}, 100%, 50%)`)
-    const block = new Block({size: [width, height, depth], position: [x, y, z], color})
-    block.direction = direction
+    const newDirection = blocks.length % 2 == 0 ? "z" : "x"
+    
+    if(blocks.length > 1) {
+        const topBlock = blocks[blocks.length - 1]
+        const topDirection = topBlock.direction
 
-    return block
-}
+        const previousBlock = blocks[blocks.length - 2]
 
-sketch.add(
-    new AmbientLight(),
-    new DirectionalLight()
-)
+        const delta = topBlock.object.position[topDirection] - previousBlock.object.position[topDirection]
 
-sketch.add(layer(0, 0, 3, 3, "x"))
-sketch.add(layer(0, 0, 3, 3, "z"))
+        const size = topDirection == "x" 
+            ? topBlock.geometry.parameters.width * topBlock.object.scale.x
+            : topBlock.geometry.parameters.depth * topBlock.object.scale.z
+
+        const overlap = size - Math.abs(delta)
+
+        if(overlap > 0) {
+            topBlock.object.scale[topDirection] = overlap / size
+            topBlock.object.position[topDirection] -= delta / 2
+    
+            const newWidth = newDirection == "x" ? overlap : topBlock.geometry.parameters.width * topBlock.object.scale.x
+            const newDepth = newDirection == "z" ? overlap : topBlock.geometry.parameters.depth * topBlock.object.scale.z
+            const x = newDirection == "x" ? topBlock.object.position.x : -10
+            const z = newDirection == "z" ? topBlock.object.position.z : -10
+    
+            sketch.add(createLayer(sketch.objects, x, z, newWidth, newDepth, newDirection == "x" ? "z" : "x"))
+        }
+    } else {
+        const x = newDirection == "x" ? 0 : -10
+        const z = newDirection == "z" ? 0 : -10
+        sketch.add(createLayer(sketch.objects, x, z, 3, 3, newDirection == "x" ? "z" : "x"))
+    }
+})
 
 sketch.render()

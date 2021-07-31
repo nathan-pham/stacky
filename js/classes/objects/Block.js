@@ -2,7 +2,7 @@ import * as THREE from "https://esm.sh/three"
 
 export default class Block {
     type = "block"
-    direction = "x"
+    direction = "none"
 
     constructor({size=[1, 1, 1], position=[0, 0, 0], color=0xfb8e00}={}) {
         this.geometry = new THREE.BoxGeometry(...size)
@@ -14,5 +14,13 @@ export default class Block {
         mesh.castShadow = true
 
         this.object = mesh
+    }
+
+    update({objects}) {
+        if(objects[objects.length - 1] == this) {
+            if(["x", "z"].includes(this.direction)) {
+                this.object.position[this.direction] += 0.15
+            }
+        }
     }
 }
