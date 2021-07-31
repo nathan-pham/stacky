@@ -16,9 +16,10 @@ sketch.use(useRemove)
 
 sketch.add(new AmbientLight(), new DirectionalLight(), new Floor(), createLayer(sketch.objects, 0, 0, 3, 3, "none"))
 
-document.body.addEventListener("click", () => {
-    const blocks = sketch.objects.filter(object => object?.type == "block")
+sketch.render()
 
+const interaction = () => {
+    const blocks = sketch.objects.filter(object => object?.type == "block")
     const newDirection = blocks.length % 2 == 0 ? "z" : "x"
     
     if(blocks.length > 1) {
@@ -61,6 +62,9 @@ document.body.addEventListener("click", () => {
         const z = newDirection == "z" ? 0 : -10
         sketch.add(createLayer(sketch.objects, x, z, 3, 3, newDirection == "x" ? "z" : "x"))
     }
-})
+}
 
-sketch.render()
+document.body.addEventListener("click", interaction)
+document.body.addEventListener("keypress", e => {
+    if(e.key == " ") {interaction()}
+})
