@@ -4,7 +4,7 @@ export default class Block {
     type = "block"
     direction = "none"
 
-    constructor({size=[1, 1, 1], position=[0, 0, 0], color=0xfb8e00}={}) {
+    constructor({size=[1, 1, 1], position=[0, 0, 0], color=0xfb8e00, overhang}={}) {
         this.geometry = new THREE.BoxGeometry(...size)
         this.material = new THREE.MeshLambertMaterial({color})
 
@@ -14,13 +14,22 @@ export default class Block {
         mesh.castShadow = true
 
         this.object = mesh
+
+        if(overhang) {
+            this.type = "overhang"
+            this.direction = "none"
+        }
     }
 
     update({objects}) {
-        if(objects[objects.length - 1] == this) {
-            if(["x", "z"].includes(this.direction)) {
-                this.object.position[this.direction] += 0.15
+        if(this.type == "block") {
+            if(objects[objects.length - 1] == this) {
+                if(["x", "z"].includes(this.direction)) {
+                    this.object.position[this.direction] += 0.15
+                }
             }
+        } else {
+
         }
     }
 }

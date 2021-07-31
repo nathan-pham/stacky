@@ -2,6 +2,7 @@ import * as THREE from "https://esm.sh/three"
 import Sketch from "./classes/Sketch.js"
 import AmbientLight from "./classes/objects/lights/AmbientLight.js"
 import DirectionalLight from "./classes/objects/lights/DirectionalLight.js"
+import createOverhang from "./hooks/createOverhang.js"
 import createLayer from "./hooks/createLayer.js"
 import useCamera from "./hooks/useCamera.js"
 
@@ -33,14 +34,23 @@ document.body.addEventListener("click", () => {
         const overlap = size - Math.abs(delta)
 
         if(overlap > 0) {
+            console.log("mk")
             topBlock.object.scale[topDirection] = overlap / size
             topBlock.object.position[topDirection] -= delta / 2
-    
+
             const newWidth = newDirection == "x" ? overlap : topBlock.geometry.parameters.width * topBlock.object.scale.x
             const newDepth = newDirection == "z" ? overlap : topBlock.geometry.parameters.depth * topBlock.object.scale.z
             const x = newDirection == "x" ? topBlock.object.position.x : -10
             const z = newDirection == "z" ? topBlock.object.position.z : -10
-    
+            
+            
+            const overhangShift = (overlap / 2 + Math.abs(delta) / 2) * Math.sign(delta)
+            const overhangX = newDirection == "x" ? topBlock.object.position.x + overhangShift : topBlock.object.position.x
+            const overhangZ = newDirection == "z" ? topBlock.object.position.z + overhangShift : topBlock.object.position.z
+            const overhangWidth = newDirection == "x" ? Math.abs(delta) : newWidth
+            const overhangDepth = newDirection == "z" ? Math.abs(delta) : newDepth
+
+            sketch.add(createOverhang(overhangX, blocks.length - 1, overhangZ, overhangWidth, overhangDepth))
             sketch.add(createLayer(sketch.objects, x, z, newWidth, newDepth, newDirection == "x" ? "z" : "x"))
         }
     } else {
