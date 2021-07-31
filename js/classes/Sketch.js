@@ -1,5 +1,6 @@
-import * as THREE from "https://esm.sh/three"
 import {OrbitControls} from "https://esm.sh/three/examples/jsm/controls/OrbitControls"
+import * as CANNON from "https://esm.sh/cannon"
+import * as THREE from "https://esm.sh/three"
 
 export default class Sketch {
     clock = new THREE.Clock()
@@ -12,6 +13,7 @@ export default class Sketch {
         this.container = typeof container == "string" ? document.querySelector(container) : container
         this.dimensions = {width: this.container.offsetWidth, height: this.container.offsetHeight}
 
+        this.createWorld()
         this.createScene()
         this.createCamera()
         this.createRenderer()
@@ -19,6 +21,10 @@ export default class Sketch {
         if(controls) {
             this.createControls()
         }
+        
+        // if(debug) {
+        //     cannonDebugger(this.scene, this.world.bodies)
+        // }
 
         window.addEventListener("resize", this.resize.bind(this))
         this.resize()
@@ -29,10 +35,26 @@ export default class Sketch {
     }
 
     add(...objects) {
+        objects = objects.flat(Infinity)
+        
         for(const object of objects) {
             this.objects.push(object)
             this.scene.add(object.object || object)
+
+            if(object.cannon) {
+                this.world.addBody(object.cannon)
+            }
         }
+    }
+
+    remove(object) {
+        this.scene.traverse(child => {
+            if(child.name == object.object?.name) {
+                this.scene.remove(object.object)
+            }
+        })
+
+        this.world.remove(object.cannon)
     }
 
     use(updateHook) {
@@ -46,6 +68,11 @@ export default class Sketch {
         this.camera.updateProjectionMatrix()
 
         this.renderer.setSize(this.dimensions.width, this.dimensions.height)
+    }
+
+    createWorld() {
+        this.world = new CANNON.World()
+        this.world.gravity.set(0, -9.87, 0)
     }
 
     createScene() {
@@ -81,7 +108,11 @@ export default class Sketch {
 
     render() {
         this.delta = this.clock.getDelta()
-        this.renderer.render(this.scene, this.camera)
+        this.world.step(1 / 60, this.delta)
+        
+        for(const hook of this.hooks) {
+            hook(this)
+        }
 
         for(const object of this.objects) {
             if(typeof object.update == "function") {
@@ -89,10 +120,8 @@ export default class Sketch {
             }
         }
 
-        for(const hook of this.hooks) {
-            hook(this)
-        }
-
+        
+        this.renderer.render(this.scene, this.camera)
         window.requestAnimationFrame(this.render.bind(this))
     }
 }

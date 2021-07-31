@@ -1,3 +1,4 @@
+import * as CANNON from "https://esm.sh/cannon"
 import * as THREE from "https://esm.sh/three"
 
 export default class Block {
@@ -5,6 +6,16 @@ export default class Block {
     direction = "none"
 
     constructor({size=[1, 1, 1], position=[0, 0, 0], color=0xfb8e00, overhang}={}) {
+        if(overhang) {
+            this.type = "overhang"
+            this.direction = "none"
+        }
+
+        this.object = this.createMesh(size, position, color)
+        this.cannon = this.createPhysics(overhang)
+    }
+
+    createMesh(size, position, color) {
         this.geometry = new THREE.BoxGeometry(...size)
         this.material = new THREE.MeshLambertMaterial({color})
 
@@ -13,12 +24,19 @@ export default class Block {
         mesh.receviveShadow = true
         mesh.castShadow = true
 
-        this.object = mesh
+        return mesh
+    }
 
-        if(overhang) {
-            this.type = "overhang"
-            this.direction = "none"
-        }
+    createPhysics(overhang) {
+        const {width, height, depth} = this.geometry.parameters
+
+        const cube = new CANNON.Body({
+            mass: overhang ? 100 : 0,
+            shape: new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, depth / 2)) 
+        })
+
+        cube.position.copy(this.object.position)
+        return cube
     }
 
     update({objects}) {
@@ -26,10 +44,13 @@ export default class Block {
             if(objects[objects.length - 1] == this) {
                 if(["x", "z"].includes(this.direction)) {
                     this.object.position[this.direction] += 0.15
+                    this.cannon.position.copy(this.object.position)
+                    this.cannon.quaternion.copy(this.object.quaternion)
                 }
             }
         } else {
-
+            this.object.position.copy(this.cannon.position)
+            this.object.quaternion.copy(this.cannon.quaternion)
         }
     }
 }

@@ -1,18 +1,20 @@
 import * as THREE from "https://esm.sh/three"
 import Sketch from "./classes/Sketch.js"
-import AmbientLight from "./classes/objects/lights/AmbientLight.js"
 import DirectionalLight from "./classes/objects/lights/DirectionalLight.js"
+import AmbientLight from "./classes/objects/lights/AmbientLight.js"
+import Floor from "./classes/objects/Floor.js"
 import createOverhang from "./hooks/createOverhang.js"
 import createLayer from "./hooks/createLayer.js"
 import useCamera from "./hooks/useCamera.js"
+import useRemove from "./hooks/useRemove.js"
 
 const sketch = new Sketch({container: "#webgl__container"})
 sketch.scene.background = new THREE.Color(0x00000)
 
 sketch.use(useCamera)
+sketch.use(useRemove)
 
-sketch.add(new AmbientLight(), new DirectionalLight(), createLayer(sketch.objects, 0, 0, 3, 3, "none"))
-
+sketch.add(new AmbientLight(), new DirectionalLight(), new Floor(), createLayer(sketch.objects, 0, 0, 3, 3, "none"))
 
 document.body.addEventListener("click", () => {
     const blocks = sketch.objects.filter(object => object?.type == "block")
@@ -34,15 +36,16 @@ document.body.addEventListener("click", () => {
         const overlap = size - Math.abs(delta)
 
         if(overlap > 0) {
-            console.log("mk")
             topBlock.object.scale[topDirection] = overlap / size
             topBlock.object.position[topDirection] -= delta / 2
+
+            topBlock.cannon.shapes[0].halfExtents[topDirection] *= overlap / size
+            topBlock.cannon.position[topDirection] -= delta / 2
 
             const newWidth = newDirection == "x" ? overlap : topBlock.geometry.parameters.width * topBlock.object.scale.x
             const newDepth = newDirection == "z" ? overlap : topBlock.geometry.parameters.depth * topBlock.object.scale.z
             const x = newDirection == "x" ? topBlock.object.position.x : -10
             const z = newDirection == "z" ? topBlock.object.position.z : -10
-            
             
             const overhangShift = (overlap / 2 + Math.abs(delta) / 2) * Math.sign(delta)
             const overhangX = newDirection == "x" ? topBlock.object.position.x + overhangShift : topBlock.object.position.x
